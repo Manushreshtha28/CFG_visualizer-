@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CFG Visualizer — Derivation & Parse Tree Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+</head>
+<body>
+  <!-- Ambient background -->
+  <div class="ambient">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M4 14 L14 4 L24 14 L14 24 Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M9 14 L14 9 L19 14 L14 19 Z" fill="currentColor" opacity="0.6"/>
+            <circle cx="14" cy="14" r="2" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">CFG<em>viz</em></span>
+          <span class="brand-tagline">Formal Language Visualizer</span>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <a href="#" class="nav-link active" data-section="main">Visualizer</a>
+        <a href="#" class="nav-link" data-section="help">Guide</a>
+        <a href="#" class="nav-link" data-section="about">About</a>
+      </nav>
+      <div class="header-actions">
+        <button class="btn-icon" id="themeToggle" title="Toggle theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN APP -->
+  <div class="app-shell" id="sectionMain">
+
+    <!-- LEFT PANEL -->
+    <aside class="sidebar">
+      <div class="sidebar-scroll">
+
+        <div class="panel-section">
+          <div class="section-label">
+            <span class="section-num">01</span> Grammar Rules
+          </div>
+          <div class="field-group">
+            <label class="field-label">Start Symbol</label>
+            <input type="text" id="startSymbol" class="field-input field-sm" value="S" maxlength="8" autocomplete="off" spellcheck="false"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">
+              Productions
+              <span class="field-hint">A → BC | d, one rule per line</span>
+            </label>
+            <textarea id="grammarRules" class="field-input field-textarea" spellcheck="false" autocomplete="off">S → AB | a
+A → aA | a
+B → bB | b</textarea>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-label">
+            <span class="section-num">02</span> Input String
+          </div>
+          <div class="field-group">
+            <label class="field-label">String to derive</label>
+            <input type="text" id="inputString" class="field-input field-sm" value="aab" autocomplete="off" spellcheck="false"/>
+          </div>
+          <div class="string-tokens" id="stringTokens"></div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-label">
+            <span class="section-num">03</span> Options
+          </div>
+          <div class="field-group">
+            <label class="field-label">Derivation Mode</label>
+            <div class="seg-control">
+              <button class="seg-btn active" data-mode="leftmost">Leftmost</button>
+              <button class="seg-btn" data-mode="rightmost">Rightmost</button>
+              <button class="seg-btn" data-mode="both">Both</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Animation Speed</label>
+            <div class="speed-control">
+              <button class="speed-btn active" data-speed="600">Slow</button>
+              <button class="speed-btn" data-speed="300">Normal</button>
+              <button class="speed-btn" data-speed="100">Fast</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Max Steps <span id="maxStepsVal" class="range-display">20</span></label>
+            <input type="range" id="maxSteps" min="5" max="60" value="20" class="range-input" oninput="document.getElementById('maxStepsVal').textContent=this.value"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Color Palette</label>
+            <div class="palette-row" id="paletteRow">
+              <button class="palette-dot active" data-palette="cyan" style="--c:#00d4ff"></button>
+              <button class="palette-dot" data-palette="lime" style="--c:#a3ff5e"></button>
+              <button class="palette-dot" data-palette="coral" style="--c:#ff6b6b"></button>
+              <button class="palette-dot" data-palette="gold" style="--c:#ffd60a"></button>
+              <button class="palette-dot" data-palette="violet" style="--c:#c77dff"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-label">
+            <span class="section-num">04</span> Presets
+          </div>
+          <div class="preset-grid">
+            <button class="preset-card" data-preset="anbn">
+              <span class="preset-name">aⁿbⁿ</span>
+              <span class="preset-desc">Equal a's & b's</span>
+            </button>
+            <button class="preset-card" data-preset="arithmetic">
+              <span class="preset-name">Arith</span>
+              <span class="preset-desc">Expressions</span>
+            </button>
+            <button class="preset-card" data-preset="palindrome">
+              <span class="preset-name">Palind</span>
+              <span class="preset-desc">Palindromes</span>
+            </button>
+            <button class="preset-card" data-preset="balanced">
+              <span class="preset-name">Parens</span>
+              <span class="preset-desc">Balanced ( )</span>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn-generate" id="generateBtn">
+          <span class="btn-generate-text">Visualize</span>
+          <span class="btn-generate-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+          </span>
+        </button>
+        <div id="errorMsg" class="error-msg hidden"></div>
+      </div>
+    </aside>
+
+    <!-- MAIN CANVAS AREA -->
+    <main class="main-area">
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab active" data-tab="derivation">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Derivation Steps
+        </button>
+        <button class="tab" data-tab="tree">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Parse Tree
+        </button>
+        <button class="tab" data-tab="animation">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Live Animation
+        </button>
+        <button class="tab" data-tab="info">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Grammar Info
+        </button>
+        <div class="tab-actions">
+          <button class="btn-icon-sm" id="exportBtn" title="Export SVG">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- DERIVATION TAB -->
+      <div class="tab-pane active" id="pane-derivation">
+        <div class="pane-inner">
+          <div id="resultBanner" class="result-banner hidden"></div>
+          <div id="derivationContent" class="derivation-content">
+            <div class="empty-state">
+              <div class="empty-icon">∂</div>
+              <p class="empty-title">No derivation yet</p>
+              <p class="empty-sub">Configure your grammar and click <strong>Visualize</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PARSE TREE TAB -->
+      <div class="tab-pane hidden" id="pane-tree">
+        <div class="tree-toolbar">
+          <div class="zoom-controls">
+            <button class="btn-icon-sm" onclick="CFG.zoomTree(1.2)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button class="btn-icon-sm" onclick="CFG.zoomTree(0.85)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button class="btn-icon-sm" onclick="CFG.resetZoom()" title="Reset zoom">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+          </div>
+          <span class="zoom-label" id="zoomLabel">100%</span>
+        </div>
+        <div class="tree-viewport" id="treeViewport">
+          <div class="empty-state">
+            <div class="empty-icon">🌳</div>
+            <p class="empty-title">No parse tree yet</p>
+            <p class="empty-sub">Generate a derivation first</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE ANIMATION TAB -->
+      <div class="tab-pane hidden" id="pane-animation">
+        <div class="anim-toolbar">
+          <button class="anim-btn" id="animPlay">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Play
+          </button>
+          <button class="anim-btn" id="animPause">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            Pause
+          </button>
+          <button class="anim-btn" id="animReset">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset
+          </button>
+          <div class="anim-step-info" id="animStepInfo">Step 0 / 0</div>
+        </div>
+        <div class="anim-stage" id="animStage">
+          <div class="empty-state">
+            <div class="empty-icon">▶</div>
+            <p class="empty-title">Live Animation</p>
+            <p class="empty-sub">Generate a derivation to see step-by-step animation</p>
+          </div>
+        </div>
+        <div class="anim-progress-bar"><div id="animProgress" class="anim-progress-fill"></div></div>
+      </div>
+
+      <!-- INFO TAB -->
+      <div class="tab-pane hidden" id="pane-info">
+        <div class="pane-inner">
+          <div id="grammarInfoContent" class="info-content">
+            <div class="empty-state">
+              <div class="empty-icon">∑</div>
+              <p class="empty-title">Grammar analysis</p>
+              <p class="empty-sub">Generate a derivation to see grammar details</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- HELP SECTION -->
+  <div class="page-section hidden" id="sectionHelp">
+    <div class="help-content">
+      <h2 class="help-title">How to Use CFGviz</h2>
+      <div class="help-grid">
+        <div class="help-card">
+          <div class="help-card-num">01</div>
+          <h3>Write Grammar Rules</h3>
+          <p>Enter productions in the left panel. Format: <code>A → BC | d</code>. One non-terminal per line, multiple productions separated by <code>|</code>.</p>
+          <pre>S → AB | a
+A → aA | a
+B → bB | b</pre>
+        </div>
+        <div class="help-card">
+          <div class="help-card-num">02</div>
+          <h3>Set Input String</h3>
+          <p>Enter the string you want to check. The visualizer will attempt to derive it from the start symbol.</p>
+          <p>Use <code>ε</code> for empty string productions.</p>
+        </div>
+        <div class="help-card">
+          <div class="help-card-num">03</div>
+          <h3>Choose Mode</h3>
+          <p><strong>Leftmost</strong>: Always expands the leftmost non-terminal first.</p>
+          <p><strong>Rightmost</strong>: Always expands the rightmost non-terminal first (reverse rightmost = canonical LR).</p>
+          <p><strong>Both</strong>: Shows both derivation types side by side.</p>
+        </div>
+        <div class="help-card">
+          <div class="help-card-num">04</div>
+          <h3>Explore Results</h3>
+          <p><strong>Derivation Steps</strong>: See each substitution step with highlights.</p>
+          <p><strong>Parse Tree</strong>: Interactive zoomable SVG tree.</p>
+          <p><strong>Live Animation</strong>: Watch the derivation unfold in real-time.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT SECTION -->
+  <div class="page-section hidden" id="sectionAbout">
+    <div class="about-content">
+      <h2 class="help-title">About CFGviz</h2>
+      <p class="about-desc">CFGviz is an educational web tool for visualizing Context-Free Grammar derivations and parse trees. Built for students of Formal Languages & Automata Theory.</p>
+      <div class="about-features">
+        <div class="about-feat">✦ BFS-based derivation engine</div>
+        <div class="about-feat">✦ Leftmost &amp; rightmost derivations</div>
+        <div class="about-feat">✦ Animated step-by-step playback</div>
+        <div class="about-feat">✦ Interactive SVG parse trees</div>
+        <div class="about-feat">✦ CNF &amp; grammar property detection</div>
+        <div class="about-feat">✦ SVG export for parse trees</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/engine.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/animation.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
